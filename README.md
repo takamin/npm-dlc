@@ -19,7 +19,7 @@ $ npm-dlc <user-name> ...
 ```sh
 $ npm-dlc vzg03566
 
-Downloaded count of vzg03566&apos;s public npm
+Download count of public package published by vzg03566.
 (https://www.npmjs.com/~vzg03566)
 
 -------------------- ------- ------------ ----- ------ -------

@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+"use strict";
 const listit = require("list-it");
 const NpmPackage = require("../index.js");
 
@@ -10,7 +12,7 @@ const main = async argv => {
     const done = {};
     for(const userName of argv) {
         if(userName in done) {
-            console.error(`Warning: Skip ${userName}`);
+            console.error(`Warning: Skip ${userName} ...`);
             continue;
         }
         done[userName] = false;
@@ -52,8 +54,8 @@ const report = (userName, listItDataObject) => {
     listItDataObject.push(separator);
 
     console.log("");
-    console.log(`Downloaded count of ${userName}'s public npm`);
-    console.log(`(https://www.npmjs.com/~${userName})`);
+    console.log(`Download count of public package published by ${userName}`);
+    console.log(`(${NpmPackage.WebSiteBase}/~${userName})`);
     console.log("");
     console.log(Object.values(separator).join(" "));
     console.log(buf.d(listItDataObject).toString());
