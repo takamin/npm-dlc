@@ -1,48 +1,59 @@
 #! /usr/bin/env node
 "use strict";
+const debug = require("debug")("npm-dlc");
 const listit = require("list-it");
 const NpmPackage = require("../index.js");
 
 const main = async argv => {
-    if(argv.length == 0) {
-        console.error("Error: no user name specified");
-        console.error("Usage: npm-dlc {{npm-user-name}}");
-        process.exit(1);
-    }
-    const done = {};
-    for(const userName of argv) {
-        if(userName in done) {
-            console.error(`Warning: Skip ${userName} ...`);
-            continue;
+    try {
+        if(argv.length == 0) {
+            console.error("Error: no user name specified");
+            console.error("Usage: npm-dlc {{npm-user-name}}");
+            process.exit(1);
         }
-        done[userName] = false;
-        const dataList = await reportDownloadCountsOf(userName);
-        if(dataList == null) {
-            console.error(`Warning: No data for ${userName}`);
-            continue;
+        const done = {};
+        for(const userName of argv) {
+            if(userName in done) {
+                console.error(`Warning: Skip ${userName} ...`);
+                continue;
+            }
+            done[userName] = false;
+            const dataList = await reportDownloadCountsOf(userName);
+            if(dataList == null) {
+                console.error(`Warning: No data for ${userName}`);
+                continue;
+            }
+            report(userName, dataList);
+            done[userName] = true;
         }
-        report(userName, dataList);
-        done[userName] = true;
+    } catch(err) {
+        console.error(`Error: ${err.message}`);
+        debug(err.stack);
     }
 };
 
 const reportDownloadCountsOf = async userName => {
-    const packageList = await NpmPackage.getPackageListOfUser(userName);
-    if(packageList.length == 0) {
-        return null;
+    try {
+        const packageList = await NpmPackage.getPackageListOfUser(userName);
+        if(packageList.length == 0) {
+            return null;
+        }
+        const dataList = await Promise.all(packageList.map(async item => {
+            const count = await NpmPackage.getLatestDownloads(item.name);
+            return {
+                NAME: item.name,
+                VERSION: item.version,
+                PUBLISHED: item.published,
+                DAILY: count.daily,
+                WEEKLY: count.weekly,
+                MONTHLY: count.monthly,
+            };
+        }));
+        return dataList;
+    } catch(err) {
+        console.error(`Error: ${err.message}`);
+        debug(err.stack);
     }
-    const dataList = await Promise.all(packageList.map(async item => {
-        const count = await NpmPackage.getLatestDownloads(item.name);
-        return {
-            NAME: item.name,
-            VERSION: item.version,
-            PUBLISHED: item.published,
-            DAILY: count.daily,
-            WEEKLY: count.weekly,
-            MONTHLY: count.monthly,
-        };
-    }));
-    return dataList;
 };
 
 const report = (userName, listItDataObject) => {

@@ -1,6 +1,6 @@
 {
   "name": "npm-dlc",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Report the latest download counts of all the npm packages owned by a specific user.",
   "main": "index.js",
   "bin": {
@@ -29,9 +29,11 @@
   },
   "homepage": "https://github.com/takamin/npm-dlc#readme",
   "dependencies": {
-    "list-it": "^0.4.1",
-    "node-html-parser": "^1.1.12",
-    "request": "^2.88.0"
+    "axios": "^0.19.2",
+    "list-it": "^1.2.1",
+    "node-html-parser": "^1.2.6"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "debug": "^4.1.1"
+  }
 }
