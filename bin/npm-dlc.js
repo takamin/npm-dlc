@@ -1,11 +1,79 @@
 #! /usr/bin/env node
 "use strict";
 const debug = require("debug")("npm-dlc");
+const GetOpt = require("node-getopt");
+const HashArg = require("hash-arg");
 const listit = require("list-it");
 const NpmPackage = require("../index.js");
 
-const main = async argv => {
+const PARAMETERS = ["username:string[]"];
+const OPTIONS = [
+    ["s", "sort=COLUMN", "Sort by the column."],
+    ["d", "desc", "Sort in descending order."],
+    ["v", "version", "Print version."],
+    ["h", "help", "Print this message."],
+];
+const COLUMNS_AND_SORTER = {
+    NAME: (a,b) => (a.NAME < b.NAME ? -1 : a.NAME > b.NAME ? 1 : 0),
+    VERSION: (a,b) => {
+        const ver2val = ver => (ver.split(".").map(e => parseInt(e)));
+        const va = ver2val(a.VERSION);
+        const vb = ver2val(b.VERSION);
+        debug(`${a.VERSION} <=> ${b.VERSION}`);
+        for(;;) {
+            const ea = va.shift() || 0;
+            const eb = vb.shift() || 0;
+            debug(`ea ${ea} <=> eb ${eb}`);
+            if(ea < eb) return -1;
+            if(ea > eb) return 1;
+            if(va.length == 0 || vb.length == 0) {
+                break;
+            }
+        }
+        return 0;
+    },
+    PUBLISHED: (a,b) => {
+        const UV = {
+            "second": 1000, "minute": 1000 * 60, "hour": 1000 * 60 * 60,
+            "day": 1000 * 60 * 60 * 24, "week": 1000 * 60 * 60 * 24 * 7,
+            "month": 1000 * 60 * 60 * 24 * 31,
+            "year": 1000 * 60 * 60 * 24 * 366,
+        };
+        const ps2v = ps => {
+            const [n, unit] = ps.split(/\s+/);
+            return (n === "a" ? 1 : parseInt(n)) * UV[unit.replace(/s$/, "")];
+        };
+        return ps2v(a.PUBLISHED) - ps2v(b.PUBLISHED);
+    },
+    DAILY: (a,b) => (a.DAILY - b.DAILY),
+    WEEKLY: (a,b) => (a.WEEKLY - b.WEEKLY),
+    MONTHLY: (a,b) => (a.MONTHLY - b.MONTHLY),
+};
+const USAGE =
+`Usage: npm-dlc <username> ... [OPTIONS]
+Report download count of all npm packages owned by the users.
+
+PARAMETER:
+username - the npm username
+
+OPTIONS:
+[[OPTIONS]]
+
+Available words For parameter COLUMN for the sort option are following:
+${Object.keys(COLUMNS_AND_SORTER).map(name => `* ${JSON.stringify(name)}`).join("\r\n")}`;
+
+const getopt = GetOpt.create(OPTIONS).bindHelp(USAGE);
+
+const main = async () => {
     try {
+        const { options, argv } = getopt.parseSystem();
+        const params = HashArg.get(PARAMETERS, argv);
+        debug(JSON.stringify(options));
+        debug(JSON.stringify(params));
+        if(options.version) {
+            printVersion();
+            process.exit(1);
+        }
         if(argv.length == 0) {
             console.error("Error: no user name specified");
             console.error("Usage: npm-dlc {{npm-user-name}}");
@@ -23,13 +91,33 @@ const main = async argv => {
                 console.error(`Warning: No data for ${userName}`);
                 continue;
             }
-            report(userName, dataList);
+            debug(JSON.stringify(dataList, null, 2));
+            if(options.sort) {
+                const column = options.sort;
+                const sorter = COLUMNS_AND_SORTER[column];
+                if(!sorter) {
+                    console.log(`Error: Unknown column ${JSON.stringify(column)}`);
+                    console.log(`Available column: ${Object.keys(COLUMNS_AND_SORTER).map(name=>JSON.stringify(name)).join(", ")}`);
+                    process.exit(1);
+                }
+                dataList.sort(sorter);
+            }
+            if(!options.desc) {
+                report(userName, dataList);
+            } else {
+                report(userName, dataList.reverse());
+            }
             done[userName] = true;
         }
     } catch(err) {
         console.error(`Error: ${err.message}`);
         debug(err.stack);
     }
+};
+
+const printVersion = ()=>{
+    const pkg = require(`${__dirname}/../package.json`);
+    console.error(`${pkg.version}`);
 };
 
 const reportDownloadCountsOf = async userName => {
@@ -55,6 +143,7 @@ const reportDownloadCountsOf = async userName => {
         debug(err.stack);
     }
 };
+
 
 const report = (userName, listItDataObject) => {
     const timestamp = (new Date()).toLocaleString();
@@ -92,4 +181,4 @@ const createListItSeparator = dataset => {
     return separator;
 };
 
-main(process.argv.slice(2));
+main();
