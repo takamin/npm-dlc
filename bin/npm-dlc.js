@@ -96,8 +96,8 @@ const main = async () => {
                 const column = options.sort;
                 const sorter = COLUMNS_AND_SORTER[column];
                 if(!sorter) {
-                    console.log(`Error: Unknown column ${JSON.stringify(column)}`);
-                    console.log(`Available column: ${Object.keys(COLUMNS_AND_SORTER).map(name=>JSON.stringify(name)).join(", ")}`);
+                    console.error(`Error: Unknown column ${JSON.stringify(column)}`);
+                    console.error(`Available column: ${Object.keys(COLUMNS_AND_SORTER).map(name=>JSON.stringify(name)).join(", ")}`);
                     process.exit(1);
                 }
                 dataList.sort(sorter);
