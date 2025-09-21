@@ -1,6 +1,6 @@
 {
   "name": "npm-dlc",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Report the latest download counts of all the npm packages owned by a specific user.",
   "main": "index.js",
   "bin": {
